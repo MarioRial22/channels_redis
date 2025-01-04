@@ -612,7 +612,7 @@ class RedisChannelLayer(BaseChannelLayer):
             # Have we come across the same redis key?
             if channel_key not in channel_key_to_message:
                 # If not, fill the corresponding dicts
-                message = copy.deepcopy(message.items())
+                message = copy.deepcopy(message)
                 message["__asgi_channel__"] = [channel]
                 channel_key_to_message[channel_key] = message
                 channel_key_to_capacity[channel_key] = self.get_capacity(channel)
