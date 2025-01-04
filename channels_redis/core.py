@@ -1,10 +1,12 @@
 import asyncio
 import collections
+import copy
 import functools
 import itertools
 import logging
 import time
 import uuid
+from collections.abc import MutableMapping
 
 from redis import asyncio as aioredis
 
@@ -168,14 +170,14 @@ class RedisChannelLayer(BaseChannelLayer):
         Send a message onto a (general or specific) channel.
         """
         # Typecheck
-        assert isinstance(message, dict), "message is not a dict"
+        assert isinstance(message, MutableMapping), "message is not a MutableMapping"
         assert self.valid_channel_name(channel), "Channel name not valid"
         # Make sure the message does not contain reserved keys
         assert "__asgi_channel__" not in message
         # If it's a process-local channel, strip off local part and stick full name in message
         channel_non_local_name = channel
         if "!" in channel:
-            message = dict(message.items())
+            message = copy.deepcopy(message)
             message["__asgi_channel__"] = channel
             channel_non_local_name = self.non_local_name(channel)
         # Write out message into expiring key (avoids big items in list)
@@ -317,7 +319,7 @@ class RedisChannelLayer(BaseChannelLayer):
                         if result is True:
                             token = result
                         else:
-                            assert isinstance(result, dict)
+                            assert isinstance(result, MutableMapping)
                             message = result
 
                     if message or exception:
@@ -610,7 +612,7 @@ class RedisChannelLayer(BaseChannelLayer):
             # Have we come across the same redis key?
             if channel_key not in channel_key_to_message:
                 # If not, fill the corresponding dicts
-                message = dict(message.items())
+                message = copy.deepcopy(message.items())
                 message["__asgi_channel__"] = [channel]
                 channel_key_to_message[channel_key] = message
                 channel_key_to_capacity[channel_key] = self.get_capacity(channel)
